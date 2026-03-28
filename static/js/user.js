@@ -48,7 +48,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 健康检查功能
+// 6. 滚动显现动画
+(() => {
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach(ent => {
+            if (ent.isIntersecting) ent.target.classList.add('in');
+            else ent.target.classList.remove('in');
+        });
+    }, { threshold: 0.1 });
+    
+    // 等待 DOM 加载完成后再查找元素
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    });
+})();
+
+// 7. 健康检查功能
 async function checkHealth() {
     const statusBg = document.querySelector('.avatar-status-bg');
     if (!statusBg) return;
@@ -90,6 +105,6 @@ async function checkHealth() {
 document.addEventListener('DOMContentLoaded', () => {
     checkHealth();
 
-    // 可选：每隔 30 秒重新检查一次
-    setInterval(checkHealth, 30000);
+    // 可选：每隔 60 秒重新检查一次
+    setInterval(checkHealth, 60000);
 });

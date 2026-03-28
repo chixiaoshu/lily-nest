@@ -52,12 +52,7 @@ fn render_index() -> String {
     let members_html = profile_data
         .team_members
         .iter()
-        .map(|m| {
-            format!(
-                r#"<md-text-button>{}</md-text-button>"#,
-                html_escape(m)
-            )
-        })
+        .map(|m| format!(r#"<md-text-button>{}</md-text-button>"#, html_escape(m)))
         .collect::<String>();
 
     // 2. 组装项目预览
@@ -75,13 +70,25 @@ fn render_index() -> String {
 
             format!(
                 r#"{divider}
-        <md-list-item type="button" href="{url}" target="_blank">
-            <md-icon slot="start">code</md-icon>
-            <div slot="headline">{name}</div>
-            <div slot="supporting-text">{desc}</div>
-            <md-icon slot="end">open_in_new</md-icon>
-        </md-list-item>
-        "#,
+                  <md-list-item type="button" href="{url}" target="_blank">
+                    <md-icon slot="start">
+                      <svg style="height: 48px; width: 48x" viewBox="0 -960 960 960">
+                        <path
+                          d="M320-240 80-480l240-240 57 57-184 184 183 183-56 56Zm320 0-57-57 184-184-183-183 56-56 240 240-240 240Z"
+                        />
+                      </svg>
+                    </md-icon>
+                    <div slot="headline">{name}</div>
+                    <div slot="supporting-text">{desc}</div>
+                    <md-icon slot="end">
+                      <svg style="height: 48px; width: 48x" viewBox="0 -960 960 960">
+                        <path
+                          d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z"
+                        />
+                      </svg>
+                    </md-icon>
+                  </md-list-item>
+                "#,
                 divider = divider,
                 url = html_escape(&proj.url),
                 name = html_escape(&proj.name),
@@ -98,7 +105,7 @@ fn render_index() -> String {
             format!(
                 r#"
         <md-list-item>
-            <img slot="start" src="{icon}" style="width: 24px; height: 24px;" alt="{title}">
+            <img slot="start" src="{icon}" style="width: 24px; height: 24px; border-radius: 50%;" alt="{title}">
             <div slot="headline">{title}</div>
             <div slot="supporting-text">{content}</div>
         </md-list-item>

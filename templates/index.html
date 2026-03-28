@@ -5,14 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lily Nest example - 梨窝</title>
 
-    <link
-      rel="preload"
-      href="/fonts/material-symbols.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-
     <script>
       (function () {
         const t = localStorage.getItem("theme") || "system";
@@ -42,9 +34,13 @@
         <!-- 右侧区域 -->
         <section class="end">
           <div class="theme-selector">
-            <md-text-button id="theme-btn">
-              <md-icon>palette</md-icon>
-            </md-text-button>
+            <md-icon-button id="theme-btn">
+              <svg style="height: 24px; width: 24px" viewBox="0 -960 960 960">
+                <path
+                  d="M480-80q-82 0-155-31.5t-127.5-86Q143-252 111.5-325T80-480q0-83 32.5-156t88-127Q256-817 330-848.5T488-880q80 0 151 27.5t124.5 76q53.5 48.5 85 115T880-518q0 115-70 176.5T640-280h-74q-9 0-12.5 5t-3.5 11q0 12 15 34.5t15 51.5q0 50-27.5 74T480-80Zm0-400Zm-177 23q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm120-160q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm200 0q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17Zm120 160q17-17 17-43t-17-43q-17-17-43-17t-43 17q-17 17-17 43t17 43q17 17 43 17t43-17ZM480-160q9 0 14.5-5t5.5-13q0-14-15-33t-15-57q0-42 29-67t71-25h70q66 0 113-38.5T800-518q0-121-92.5-201.5T488-800q-136 0-232 93t-96 227q0 133 93.5 226.5T480-160Z"
+                />
+              </svg>
+            </md-icon-button>
 
             <md-menu anchor="theme-btn" id="theme-menu">
               <md-menu-item data-mode="light">
@@ -62,7 +58,7 @@
       </div>
     </header>
     <main class="main-content">
-      <div id="home" class="hero-wrapper">
+      <div id="home" class="hero-wrapper reveal">
         <div class="tonal-container hero-layout">
           <div class="left-content">
             <section class="primary-section">
@@ -99,11 +95,26 @@
             </div>
           </div>
         </div>
+        <!-- 探索 -->
+        <div class="explore-more">
+          <md-icon>
+            <svg style="height: 96px; width: 96px" viewBox="0 -960 960 960">
+              <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
+            </svg>
+          </md-icon>
+        </div>
       </div>
+
       <!-- 项目概览 -->
-      <section class="content-section">
+      <section class="content-section reveal">
         <div class="section-header">
-          <md-icon>folder</md-icon>
+          <md-icon>
+            <svg style="height: 72px; width: 72px" viewBox="0 -960 960 960">
+              <path
+                d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z"
+              />
+            </svg>
+          </md-icon>
           <h2 id="projects">项目概览</h2>
           <a
             class="header-anchor"
@@ -119,7 +130,13 @@
             <md-divider></md-divider>
 
             <md-list-item>
-              <md-icon slot="start">add</md-icon>
+              <md-icon slot="start">
+                <svg style="height: 48px; width: 48px" viewBox="0 -960 960 960">
+                  <path
+                    d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
+                  />
+                </svg>
+              </md-icon>
               <div slot="headline">更多项目正在路上</div>
               <div slot="supporting-text">
                 项目列表将从后端配置文件动态加载，敬请期待。
@@ -129,9 +146,15 @@
         </div>
       </section>
       <!-- 关于我 -->
-      <section class="content-section">
+      <section class="content-section reveal">
         <div class="section-header">
-          <md-icon>person</md-icon>
+          <md-icon>
+            <svg style="height: 72px; width: 72px" viewBox="0 -960 960 960">
+              <path
+                d="M367-527q-47-47-47-113t47-113q47-47 113-47t113 47q47 47 47 113t-47 113q-47 47-113 47t-113-47ZM160-160v-112q0-34 17.5-62.5T224-378q62-31 126-46.5T480-440q66 0 130 15.5T736-378q29 15 46.5 43.5T800-272v112H160Zm80-80h480v-32q0-11-5.5-20T700-306q-54-27-109-40.5T480-360q-56 0-111 13.5T260-306q-9 5-14.5 14t-5.5 20v32Zm296.5-343.5Q560-607 560-640t-23.5-56.5Q513-720 480-720t-56.5 23.5Q400-673 400-640t23.5 56.5Q447-560 480-560t56.5-23.5ZM480-640Zm0 400Z"
+              />
+            </svg>
+          </md-icon>
           <h2 id="about">关于我</h2>
           <a class="header-anchor" href="#about" aria-label="Link to About"
             >#</a
@@ -140,10 +163,16 @@
         <div class="tonal-container list-layout">
           <md-list class="aboutme-list">
             {{about_items_html}}
-            <md-list-item href="mailto:example@mail.com" type="link">
-              <md-icon slot="start">mail</md-icon>
-              <div slot="headline">联系我</div>
-              <div slot="supporting-text">咕噜咕噜邮箱</div>
+            <md-list-item>
+              <md-icon slot="start">
+                <svg style="height: 24px; width: 24px" viewBox="0 -960 960 960">
+                  <path
+                    d="M440-280h80v-240h-80v240Zm68.5-331.5Q520-623 520-640t-11.5-28.5Q497-680 480-680t-28.5 11.5Q440-657 440-640t11.5 28.5Q463-600 480-600t28.5-11.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z"
+                  />
+                </svg>
+              </md-icon>
+              <div slot="headline">更多内容</div>
+              <div slot="supporting-text">等待更新中...</div>
             </md-list-item>
           </md-list>
         </div>
