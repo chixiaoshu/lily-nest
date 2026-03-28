@@ -297,7 +297,7 @@ body {
   margin: 0;
 }
 
-.section-header h1 {
+.section-header h2 {
   font-size: 1.5rem;
   font-weight: 500;
   color: var(--md-sys-color-on-surface);

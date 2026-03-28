@@ -98,7 +98,7 @@ fn render_index() -> String {
             format!(
                 r#"
         <md-list-item>
-            <img slot="start" src="{icon}" style="width: 24px; height: 24px;">
+            <img slot="start" src="{icon}" style="width: 24px; height: 24px;" alt="{title}">
             <div slot="headline">{title}</div>
             <div slot="supporting-text">{content}</div>
         </md-list-item>
