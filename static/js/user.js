@@ -6,7 +6,7 @@
             else ent.target.classList.remove('in');
         });
     }, { threshold: 0.1 });
-    
+
     // 等待 DOM 加载完成后再查找元素
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.reveal').forEach(el => io.observe(el));

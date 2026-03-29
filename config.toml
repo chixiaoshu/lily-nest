@@ -2,7 +2,7 @@ current_identity = "Temp Page"
 avatar_url = "/images/avatar.webp"
 bg_url = "/images/bg.webp"
 team_members = ["User_1", "User_2"]
-site_version = "0.1.2-beta"
+site_version = "0.1.3-beta"
 intro = "template."
 
 [tls]

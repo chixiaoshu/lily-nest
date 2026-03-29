@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{
     Router,
     extract::{Request, State},
-    http::{HeaderValue, header},
+    http::{HeaderName, HeaderValue, header},
     middleware::{self, Next},
     response::{Html, IntoResponse, Redirect, Response},
     routing::get,
@@ -25,7 +25,6 @@ pub fn build_app() -> Router {
 
     Router::new()
         .route("/", get(handler_home_page))
-        .layer(middleware::from_fn(security_headers))
         .with_state(state)
         .route("/index.html", get(|| async { Redirect::permanent("/") }))
         .nest("/api/v1", api_routes)
@@ -40,39 +39,70 @@ pub fn build_app() -> Router {
         .nest_service("/css", ServeDir::new("./static/css"))
         .nest_service("/js", ServeDir::new("./static/js"))
         .nest_service("/fonts", ServeDir::new("./static/fonts"))
+        .layer(middleware::from_fn(security_headers))
+        .layer(middleware::from_fn(static_asset_cache_control))
 }
 
-
 async fn security_headers(req: Request, next: Next) -> Response {
-    let mut response = next.run(req).await;
+    let mut res = next.run(req).await;
+    let h = res.headers_mut();
 
-    response.headers_mut().insert(
-        header::CONTENT_SECURITY_POLICY,
-        HeaderValue::from_static(content_security_policy()),
-    );
+    let headers: [(HeaderName, &'static str); 6] = [
+        (header::CONTENT_SECURITY_POLICY, content_security_policy()),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
+        (header::REFERRER_POLICY, "strict-origin-when-cross-origin"),
+        (header::X_FRAME_OPTIONS, "DENY"),
+        (
+            header::STRICT_TRANSPORT_SECURITY,
+            "max-age=31536000; includeSubDomains",
+        ),
+        (
+            HeaderName::from_static("permissions-policy"),
+            "camera=(), microphone=(), geolocation=(), payment=()",
+        ),
+    ];
 
-    response.headers_mut().insert(
-        header::X_CONTENT_TYPE_OPTIONS,
-        HeaderValue::from_static("nosniff"),
-    );
+    for (name, value) in headers {
+        h.insert(name, HeaderValue::from_static(value));
+    }
 
-    response.headers_mut().insert(
-        header::REFERRER_POLICY,
-        HeaderValue::from_static("strict-origin-when-cross-origin"),
-    );
-    response
-        .headers_mut()
-        .insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
-    response.headers_mut().insert(
-        header::STRICT_TRANSPORT_SECURITY,
-        HeaderValue::from_static("max-age=31536000;includeSubDomains"),
-    );
-
-    response
+    res
 }
 
 fn content_security_policy() -> &'static str {
     "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+}
+
+async fn static_asset_cache_control(req: Request, next: Next) -> Response {
+    let path = req.uri().path().to_owned();
+    let mut response = next.run(req).await;
+
+    if !response.status().is_success() {
+        return response;
+    }
+
+    let cache_control = if path.starts_with("/fonts/") {
+        Some("public, max-age=604800")
+    } else if path.starts_with("/css/") || path.starts_with("/js/") || path.starts_with("/images/")
+    {
+        Some("public, max-age=86400")
+    } else if matches!(
+        path.as_str(),
+        "/favicon.ico" | "/robots.txt" | "/sitemap.xml" | "/BingSiteAuth.xml"
+    ) {
+        Some("public, max-age=3600")
+    } else {
+        None
+    };
+
+    if let Some(cache_control) = cache_control {
+        response.headers_mut().insert(
+            axum::http::header::CACHE_CONTROL,
+            HeaderValue::from_static(cache_control),
+        );
+    }
+
+    response
 }
 
 fn sanitize_url(url: &str) -> &str {
@@ -164,7 +194,10 @@ fn render_index() -> String {
 
     // 替换占位符
     html = html.replace("{{title}}", &html_escape(&profile_data.current_identity));
-    html = html.replace("{{avatar}}", &html_escape(sanitize_url(&profile_data.avatar_url)));
+    html = html.replace(
+        "{{avatar}}",
+        &html_escape(sanitize_url(&profile_data.avatar_url)),
+    );
     html = html.replace("{{bg}}", &html_escape(sanitize_url(&profile_data.bg_url)));
     html = html.replace("{{ver}}", &html_escape(&profile_data.site_version));
     html = html.replace("{{members_html}}", &members_html);
@@ -177,13 +210,16 @@ fn render_index() -> String {
 }
 
 async fn handler_home_page(State(state): State<Arc<AppState>>) -> impl IntoResponse {
-    if cfg!(debug_assertions) {
-        // debug：每次请求都重算（开发爽）
-        return Html(render_index());
-    }
-    // release：用缓存
-    let cache = state.html_cache.read().await;
-    Html(cache.clone())
+    let html = if cfg!(debug_assertions) {
+        render_index()
+    } else {
+        state.html_cache.read().await.clone()
+    };
+
+    (
+        [(axum::http::header::CACHE_CONTROL, "public, max-age=300")],
+        Html(html),
+    )
 }
 
 // 简单转义：用于插入到 HTML 文本节点/属性里
