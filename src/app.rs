@@ -70,7 +70,19 @@ async fn security_headers(req: Request, next: Next) -> Response {
 }
 
 fn content_security_policy() -> &'static str {
-    "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    concat!(
+        "default-src 'self'; ",
+        "script-src 'self' https://static.cloudflareinsights.com; ",
+        "script-src-attr 'none'; ",
+        "style-src 'self' 'unsafe-inline'; ",
+        "img-src 'self' data:; ",
+        "connect-src 'self' https://cloudflareinsights.com; ",
+        "font-src 'self'; ",
+        "object-src 'none'; ",
+        "base-uri 'self'; ",
+        "form-action 'self'; ",
+        "frame-ancestors 'none'",
+    )
 }
 
 async fn static_asset_cache_control(req: Request, next: Next) -> Response {
