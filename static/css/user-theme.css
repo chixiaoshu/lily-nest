@@ -15,7 +15,6 @@ body {
 }
 
 .app-bar {
-  position: sticky;
   top: 0;
   left: 0;
   right: 0;
@@ -45,11 +44,7 @@ body {
   flex-direction: column;
   justify-content: center;
   box-sizing: border-box;
-  scroll-margin-top: 72px;
-}
-
-.theme-selector {
-  max-height: 40px;
+  scroll-margin-top: 32px;
 }
 
 /* 第三层：Tonal 内容容器 */

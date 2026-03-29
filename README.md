@@ -6,7 +6,7 @@
 - www.sulyhub.cn
 
 ## 项目简介
-梨窝是一个基于 Rust + Axum 的个人主页/作品集网站，支持项目动态加载、团队成员展示、主题切换等功能，界面采用 Material You 风格，支持响应式设计。
+梨窝是一个基于 Rust + Axum 的个人主页/作品集网站，支持项目动态加载、团队成员展示、深浅色等功能，界面采用 Material You 风格，支持响应式设计。
 
 ## 技术栈
 - Rust 2024
@@ -14,15 +14,14 @@
 - Tokio 异步运行时
 - Serde/TOML 配置
 - Tower HTTP 静态资源服务
-- 前端：原生 Material Design、@material/web 组件、本地 Material 3 主题 CSS、Google Material Symbols 字体
+- 前端：原生 Material Design、@material/web 组件、本地 Material 3 主题 CSS
 
 ## 主要功能
 - 首页动态渲染（项目、团队成员、关于我）
 - 配置文件驱动（config.toml、projects.toml）
 - RESTful API（/api/v1/health, /api/v1/home/profile）
 - 静态资源服务（图片、CSS、robots.txt、sitemap.xml 等）
-- 主题切换（浅色/深色/跟随系统）
-- 健康检查接口
+- 主题切换（跟随系统）
 
 ## 项目结构
 ```
@@ -67,12 +66,12 @@ lily-nest/
 ## 配置说明
 - `config.toml`：站点基础信息、团队成员、关于我等
 - `projects.toml`：项目列表
-- `static/`：静态资源（图片、CSS、robots.txt等）
+- `static/`：静态资源（图片、CSS、JS、robots.txt等）
 
 ## 亮点与注意事项
 - 支持热加载（debug模式下每次请求自动渲染最新页面）
 - 生产环境建议用 Nginx 代理静态资源
-- 前端资源基于 Google Material Design 规范，本地使用 `@material/web` 组件库并引入 Google Material Symbols 字体
+- 前端资源基于 Google Material Design 规范，本地使用 `@material/web` 组件库并内联 Google Material Symbols SVG 图像
 - 仅供个人学习/展示用途，欢迎二次开发
 
 ## License

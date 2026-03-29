@@ -2,8 +2,10 @@ use std::sync::Arc;
 
 use axum::{
     Router,
-    extract::State,
-    response::{Html, IntoResponse, Redirect},
+    extract::{Request, State},
+    http::{HeaderValue, header},
+    middleware::{self, Next},
+    response::{Html, IntoResponse, Redirect, Response},
     routing::get,
 };
 use tokio::sync::RwLock;
@@ -23,6 +25,7 @@ pub fn build_app() -> Router {
 
     Router::new()
         .route("/", get(handler_home_page))
+        .layer(middleware::from_fn(security_headers))
         .with_state(state)
         .route("/index.html", get(|| async { Redirect::permanent("/") }))
         .nest("/api/v1", api_routes)
@@ -39,12 +42,45 @@ pub fn build_app() -> Router {
         .nest_service("/fonts", ServeDir::new("./static/fonts"))
 }
 
+
+async fn security_headers(req: Request, next: Next) -> Response {
+    let mut response = next.run(req).await;
+
+    response.headers_mut().insert(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static(content_security_policy()),
+    );
+
+    response.headers_mut().insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+
+    response.headers_mut().insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("strict-origin-when-cross-origin"),
+    );
+    response
+        .headers_mut()
+        .insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
+    response.headers_mut().insert(
+        header::STRICT_TRANSPORT_SECURITY,
+        HeaderValue::from_static("max-age=31536000;includeSubDomains"),
+    );
+
+    response
+}
+
+fn content_security_policy() -> &'static str {
+    "default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+}
+
 fn sanitize_url(url: &str) -> &str {
     let url = url.trim();
-    if url.starts_with("http://") || url.starts_with("https://") {
+    if url.starts_with("http://") || url.starts_with("https://") || url.starts_with('/') {
         url
     } else {
-        "#"
+        "#projects"
     }
 }
 
@@ -79,7 +115,7 @@ fn render_index() -> String {
 
             format!(
                 r#"{divider}
-                  <md-list-item type="button" href="{url}" target="_blank">
+                  <md-list-item type="button" href="{url}" target="_blank" rel="noopener">
                     <md-icon slot="start">
                       <svg style="height: 48px; width: 48x" viewBox="0 -960 960 960">
                         <path
@@ -119,7 +155,7 @@ fn render_index() -> String {
             <div slot="supporting-text">{content}</div>
         </md-list-item>
         "#,
-                icon = html_escape(&item.icon_url),
+                icon = html_escape(sanitize_url(&item.icon_url)),
                 title = html_escape(&item.title),
                 content = html_escape(&item.content)
             )
@@ -128,8 +164,8 @@ fn render_index() -> String {
 
     // 替换占位符
     html = html.replace("{{title}}", &html_escape(&profile_data.current_identity));
-    html = html.replace("{{avatar}}", &html_escape(&profile_data.avatar_url));
-    html = html.replace("{{bg}}", &html_escape(&profile_data.bg_url));
+    html = html.replace("{{avatar}}", &html_escape(sanitize_url(&profile_data.avatar_url)));
+    html = html.replace("{{bg}}", &html_escape(sanitize_url(&profile_data.bg_url)));
     html = html.replace("{{ver}}", &html_escape(&profile_data.site_version));
     html = html.replace("{{members_html}}", &members_html);
     html = html.replace("{{intro}}", &html_escape(&profile_data.intro));
