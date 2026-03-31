@@ -3,14 +3,14 @@ use std::sync::Arc;
 use axum::{
     Router,
     extract::{Request, State},
-    http::{HeaderName, HeaderValue, header},
+    http::{HeaderName, HeaderValue, header, Method},
     middleware::{self, Next},
     response::{Html, IntoResponse, Redirect, Response},
     routing::get,
 };
 use tokio::sync::RwLock;
 use tower_http::services::{ServeDir, ServeFile};
-
+use tower_http::cors::{Any, CorsLayer};
 use crate::config::{load_about_items, load_profile, load_projects};
 
 pub struct AppState {
@@ -22,6 +22,16 @@ pub fn build_app() -> Router {
     let state = Arc::new(AppState {
         html_cache: RwLock::new(render_index()),
     });
+
+    let cors = CorsLayer::new()
+        // 允许的来源，如果只允许自己的域可以写 .allow_origin("https://www.example.com".parse().unwrap())
+        // 后续更新会把配置独立到 `config.toml` 里面
+        .allow_origin(Any)
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers([
+            header::CONTENT_TYPE,
+            HeaderName::from_static("signature-agent"),
+        ]);
 
     Router::new()
         .route("/", get(handler_home_page))
@@ -39,6 +49,7 @@ pub fn build_app() -> Router {
         .nest_service("/css", ServeDir::new("./static/css"))
         .nest_service("/js", ServeDir::new("./static/js"))
         .nest_service("/fonts", ServeDir::new("./static/fonts"))
+        .layer(cors)
         .layer(middleware::from_fn(security_headers))
         .layer(middleware::from_fn(static_asset_cache_control))
 }
@@ -70,13 +81,14 @@ async fn security_headers(req: Request, next: Next) -> Response {
 }
 
 fn content_security_policy() -> &'static str {
+    // 此处后续可能也会从 `config.toml` 文件里加载，不过我会创建一个模型，在不设置的时候，Defualt值默认回退到最严格的情况
     concat!(
         "default-src 'self'; ",
-        "script-src 'self' https://static.cloudflareinsights.com; ",
+        "script-src 'self' https://*.cloudflare.com https://*.cloudflareinsights.com; ",
         "script-src-attr 'none'; ",
         "style-src 'self' 'unsafe-inline'; ",
         "img-src 'self' data:; ",
-        "connect-src 'self' https://cloudflareinsights.com; ",
+        "connect-src 'self' https://*.cloudflareinsights.com; ",
         "font-src 'self'; ",
         "object-src 'none'; ",
         "base-uri 'self'; ",
