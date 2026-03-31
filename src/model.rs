@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(default)]
 pub struct HomeProfile {
     pub current_identity: String,  // 比如 "Home Page"
     pub avatar_url: String,        // 头像地址
@@ -21,10 +22,10 @@ impl Default for HomeProfile {
         Self {
             current_identity: "Default".to_string(),
             avatar_url: "/images/avatar.webp".to_string(),
-            bg_url: "/images/bg.png".to_string(),
+            bg_url: "/images/bg.webp".to_string(),
             team_members: vec!["User_1".into(), "User_2".into(), "User_3".into()],
-            site_version: "default".to_string(),
-            intro: "Hi！\n欢迎下滑探索我的项目～".to_string(),
+            site_version: env!("CARGO_PKG_VERSION").to_string(),
+            intro: "Hi！欢迎下滑探索我的项目～".to_string(),
         }
     }
 }
@@ -33,7 +34,7 @@ impl Default for HealthResponse {
     fn default() -> Self {
         Self {
             status: "ok",
-            version: "CARGO_PKG_VERSION",
+            version: env!("CARGO_PKG_VERSION"),
         }
     }
 }
@@ -91,4 +92,25 @@ impl Default for AboutList {
 pub struct TlsConfig {
     pub cert_path: String,
     pub key_path: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SecurityConfig {
+    pub allow_origins: Vec<String>,
+    pub csp_policy: String,
+    pub permissions_policy: String,
+}
+
+impl Default for SecurityConfig {
+    fn default() -> Self {
+        Self {
+            allow_origins: vec!["*".into()],
+            csp_policy: "default-src 'self'; script-src 'self'; script-src-attr 'none'; \
+                         style-src 'self' 'unsafe-inline'; img-src 'self' data:; \
+                         connect-src 'self'; font-src 'self'; object-src 'none'; \
+                         base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+                .into(),
+            permissions_policy: "camera=(), microphone=(), geolocation=(), payment=()".into(),
+        }
+    }
 }

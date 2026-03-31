@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
+use crate::config::{load_about_items, load_projects, load_security_config, load_site_profile};
 use axum::{
     Router,
     extract::{Request, State},
-    http::{HeaderName, HeaderValue, header, Method},
+    http::{HeaderName, HeaderValue, Method, header},
     middleware::{self, Next},
     response::{Html, IntoResponse, Redirect, Response},
     routing::get,
 };
 use tokio::sync::RwLock;
-use tower_http::services::{ServeDir, ServeFile};
 use tower_http::cors::{Any, CorsLayer};
-use crate::config::{load_about_items, load_profile, load_projects};
+use tower_http::services::{ServeDir, ServeFile};
 
 pub struct AppState {
     pub html_cache: RwLock<String>,
@@ -22,16 +22,25 @@ pub fn build_app() -> Router {
     let state = Arc::new(AppState {
         html_cache: RwLock::new(render_index()),
     });
+    let config = load_security_config();
 
     let cors = CorsLayer::new()
-        // 允许的来源，如果只允许自己的域可以写 .allow_origin("https://www.example.com".parse().unwrap())
-        // 后续更新会把配置独立到 `config.toml` 里面
-        .allow_origin(Any)
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
         .allow_headers([
             header::CONTENT_TYPE,
             HeaderName::from_static("signature-agent"),
         ]);
+
+    let cors = if config.allow_origins.contains(&"*".to_string()) {
+        cors.allow_origin(Any)
+    } else {
+        let origins: Vec<HeaderValue> = config
+            .allow_origins
+            .iter()
+            .filter_map(|o| o.parse().ok())
+            .collect();
+        cors.allow_origin(origins)
+    };
 
     Router::new()
         .route("/", get(handler_home_page))
@@ -56,45 +65,36 @@ pub fn build_app() -> Router {
 
 async fn security_headers(req: Request, next: Next) -> Response {
     let mut res = next.run(req).await;
-    let h = res.headers_mut();
 
-    let headers: [(HeaderName, &'static str); 6] = [
-        (header::CONTENT_SECURITY_POLICY, content_security_policy()),
-        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
-        (header::REFERRER_POLICY, "strict-origin-when-cross-origin"),
-        (header::X_FRAME_OPTIONS, "DENY"),
+    let config = load_security_config();
+
+    // 用 (HeaderName, String) 而不是 (HeaderName, &'static str)
+    let headers: [(HeaderName, String); 6] = [
+        (header::CONTENT_SECURITY_POLICY, config.csp_policy),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff".into()),
+        (
+            header::REFERRER_POLICY,
+            "strict-origin-when-cross-origin".into(),
+        ),
+        (header::X_FRAME_OPTIONS, "DENY".into()),
         (
             header::STRICT_TRANSPORT_SECURITY,
-            "max-age=31536000; includeSubDomains",
+            "max-age=31536000; includeSubDomains".into(),
         ),
         (
             HeaderName::from_static("permissions-policy"),
-            "camera=(), microphone=(), geolocation=(), payment=()",
+            config.permissions_policy,
         ),
     ];
 
+    let headers_map = res.headers_mut();
     for (name, value) in headers {
-        h.insert(name, HeaderValue::from_static(value));
+        if let Ok(v) = HeaderValue::from_str(&value) {
+            headers_map.insert(name, v);
+        }
     }
 
     res
-}
-
-fn content_security_policy() -> &'static str {
-    // 此处后续可能也会从 `config.toml` 文件里加载，不过我会创建一个模型，在不设置的时候，Defualt值默认回退到最严格的情况
-    concat!(
-        "default-src 'self'; ",
-        "script-src 'self' https://*.cloudflare.com https://*.cloudflareinsights.com; ",
-        "script-src-attr 'none'; ",
-        "style-src 'self' 'unsafe-inline'; ",
-        "img-src 'self' data:; ",
-        "connect-src 'self' https://*.cloudflareinsights.com; ",
-        "font-src 'self'; ",
-        "object-src 'none'; ",
-        "base-uri 'self'; ",
-        "form-action 'self'; ",
-        "frame-ancestors 'none'",
-    )
 }
 
 async fn static_asset_cache_control(req: Request, next: Next) -> Response {
@@ -139,7 +139,7 @@ fn sanitize_url(url: &str) -> &str {
 }
 
 fn render_index() -> String {
-    let profile_data = load_profile();
+    let profile_data = load_site_profile();
     let projects_data = load_projects();
     let about_data = load_about_items();
 

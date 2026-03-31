@@ -31,8 +31,10 @@
 ```
 lily-nest/
 ├── Cargo.toml
-├── config.toml               # 站点基础配置（个人信息、团队成员、关于我）
+├── config.toml               # 站点基础配置（证书，安全）
+├── site.toml                 # 站点基础信息配置
 ├── projects.toml             # 项目列表配置
+├── about.toml                # 关于我列表配置
 ├── certs/
 │   ├── example.com.pem       # SSL 证书
 │   └── example.com.key       # SSL 私钥

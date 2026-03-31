@@ -178,7 +178,7 @@ body {
 }
 
 .main-intro {
-  max-width: 50%;
+  max-width: fit-content;
   font-size: 1.25rem;
   padding: 24px 0;
   margin: 0 0 40px 0;

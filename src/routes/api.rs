@@ -1,7 +1,7 @@
 use axum::{Json, Router, routing::get};
 
 use crate::{
-    config::load_profile,
+    config::load_site_profile,
     model::{HealthResponse, HomeProfile},
 };
 
@@ -12,7 +12,7 @@ pub fn router() -> Router {
 }
 
 async fn get_home_profile() -> Json<HomeProfile> {
-    Json(load_profile())
+    Json(load_site_profile())
 }
 
 async fn health_handler() -> Json<HealthResponse> {

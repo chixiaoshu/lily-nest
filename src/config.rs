@@ -1,22 +1,31 @@
-use crate::model::{AboutList, HomeProfile, ProjectList, TlsConfig};
+use crate::model::{AboutList, HomeProfile, ProjectList, SecurityConfig, TlsConfig};
 use serde::Deserialize;
 use std::fs;
 
-pub fn load_profile() -> HomeProfile {
-    let profile_str = match fs::read_to_string("config.toml") {
-        Ok(s) => s,
-        Err(err) => {
-            eprintln!("警告：读取 config.toml 失败 ({}), 使用默认配置", err);
+pub fn load_site_profile() -> HomeProfile {
+    // 1. 尝试读取文件
+    let content = match fs::read_to_string("site.toml") {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("提示: 未找到 site.toml ({}), 使用内置默认配置", e);
             return HomeProfile::default();
         }
     };
-    match toml::from_str(&profile_str) {
-        Ok(profile) => profile,
-        Err(err) => {
-            eprintln!("警告: 解析 config.toml 失败 ({})，使用默认配置", err);
-            HomeProfile::default()
-        }
+
+    #[derive(Deserialize)]
+    struct Config {
+        site: HomeProfile,
     }
+
+    // 2. 尝试解析
+    toml::from_str::<Config>(&content)
+        .map(|c| c.site)
+        .unwrap_or_else(|e| {
+            // 这里会打印出具体的错误：是少了双引号或字段类型对不上
+            // 配合 `model.rs` 的#[serde(default)]，缺失字段不会报错，只有“类型错误”或“格式错误”才会走到这里
+            eprintln!("解析 site.toml 失败: {}. 请检查格式是否正确。", e);
+            HomeProfile::default()
+        })
 }
 
 pub fn load_projects() -> ProjectList {
@@ -37,8 +46,8 @@ pub fn load_projects() -> ProjectList {
 }
 
 pub fn load_about_items() -> AboutList {
-    // 尝试读取 config.toml
-    let content = match std::fs::read_to_string("config.toml") {
+    // 尝试读取 about.toml
+    let content = match std::fs::read_to_string("about.toml") {
         Ok(s) => s,
         Err(_) => return AboutList::default(), // 找不到文件，直接给默认值
     };
@@ -47,7 +56,7 @@ pub fn load_about_items() -> AboutList {
     match toml::from_str::<AboutList>(&content) {
         Ok(list) => list,
         Err(e) => {
-            eprintln!("解析 config.toml 失败: {}, 使用默认配置", e);
+            eprintln!("解析 about.toml 失败: {}, 使用默认配置", e);
             AboutList::default()
         }
     }
@@ -55,9 +64,28 @@ pub fn load_about_items() -> AboutList {
 
 pub fn load_tls_config() -> Option<TlsConfig> {
     let content = fs::read_to_string("config.toml").ok()?;
-    // 将整个文件解析为 toml::Value，以便提取 [tls] 节
-    let value: toml::Value = toml::from_str(&content).ok()?;
-    let tls_value = value.get("tls")?;
-    // 将 tls 节反序列化为 TlsConfig
-    TlsConfig::deserialize(tls_value.clone()).ok()
+    // 局部 Wrapper，以便提取 [tls] 节
+    #[derive(Deserialize)]
+    struct Wrapper {
+        tls: TlsConfig,
+    }
+    toml::from_str::<Wrapper>(&content).ok().map(|w| w.tls)
+}
+
+pub fn load_security_config() -> SecurityConfig {
+    let content = std::fs::read_to_string("config.toml").unwrap_or_default();
+
+    #[derive(Deserialize)]
+    struct Wrapper {
+        security: SecurityConfig,
+    }
+
+    toml::from_str::<Wrapper>(&content)
+        .map(|w| w.security)
+        .unwrap_or_else(|e| {
+            if !content.is_empty() {
+                eprintln!("警告: security 配置解析失败 ({}), 使用默认安全策略", e);
+            }
+            SecurityConfig::default()
+        })
 }
