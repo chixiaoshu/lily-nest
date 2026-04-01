@@ -1,13 +1,14 @@
 use crate::model::{AboutList, HomeProfile, ProjectList, SecurityConfig, TlsConfig};
 use serde::Deserialize;
 use std::fs;
+use tracing::error;
 
 pub fn load_site_profile() -> HomeProfile {
     // 1. 尝试读取文件
     let content = match fs::read_to_string("site.toml") {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("提示: 未找到 site.toml ({}), 使用内置默认配置", e);
+            error!("提示: 未找到 site.toml ({}), 使用内置默认配置", e);
             return HomeProfile::default();
         }
     };
@@ -23,7 +24,7 @@ pub fn load_site_profile() -> HomeProfile {
         .unwrap_or_else(|e| {
             // 这里会打印出具体的错误：是少了双引号或字段类型对不上
             // 配合 `model.rs` 的#[serde(default)]，缺失字段不会报错，只有“类型错误”或“格式错误”才会走到这里
-            eprintln!("解析 site.toml 失败: {}. 请检查格式是否正确。", e);
+            error!("解析 site.toml 失败: {}. 请检查格式是否正确。", e);
             HomeProfile::default()
         })
 }
@@ -39,7 +40,7 @@ pub fn load_projects() -> ProjectList {
     match toml::from_str::<ProjectList>(&content) {
         Ok(list) => list,
         Err(e) => {
-            eprintln!("解析 projects.toml 失败: {}, 使用默认配置", e);
+            error!("解析 projects.toml 失败: {}, 使用默认配置", e);
             ProjectList::default()
         }
     }
@@ -56,7 +57,7 @@ pub fn load_about_items() -> AboutList {
     match toml::from_str::<AboutList>(&content) {
         Ok(list) => list,
         Err(e) => {
-            eprintln!("解析 about.toml 失败: {}, 使用默认配置", e);
+            error!("解析 about.toml 失败: {}, 使用默认配置", e);
             AboutList::default()
         }
     }
@@ -84,7 +85,7 @@ pub fn load_security_config() -> SecurityConfig {
         .map(|w| w.security)
         .unwrap_or_else(|e| {
             if !content.is_empty() {
-                eprintln!("警告: security 配置解析失败 ({}), 使用默认安全策略", e);
+                error!("警告: security 配置解析失败 ({}), 使用默认安全策略", e);
             }
             SecurityConfig::default()
         })

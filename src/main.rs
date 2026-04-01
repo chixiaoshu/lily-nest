@@ -4,17 +4,26 @@ mod model;
 mod routes;
 
 use axum_server::tls_rustls::RustlsConfig;
+use tracing::info;
 use std::net::SocketAddr;
+use tracing_subscriber::filter::EnvFilter;
+use tracing_subscriber::fmt;
+use tracing_subscriber::prelude::*;
 
 #[tokio::main]
 async fn main() {
+    // 初始化 tracing，将日志输出到控制台
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::new("info"))
+        .init();
     // 构建应用（路由、静态资源等）
     let app = app::build_app();
 
     if cfg!(debug_assertions) {
         // debug：直接 HTTP 8880
         let addr: SocketAddr = "[::]:8880".parse().expect("解析地址失败");
-        println!(">> 梨窝 已启动 (dev): http://{}", addr);
+        info!(">> 梨窝 已启动 (dev): http://{}", addr);
         let listener = tokio::net::TcpListener::bind(addr)
             .await
             .expect("Failed to bind address");
@@ -39,7 +48,7 @@ async fn main() {
             .expect("加载 TLS 证书失败");
 
         let addr: SocketAddr = "[::]:8443".parse().expect("解析地址失败");
-        println!(">> 梨窝 已启动: https://{}", addr);
+        info!(">> 梨窝 已启动: https://{}", addr);
         axum_server::bind_rustls(addr, config)
             .serve(app.into_make_service())
             .await

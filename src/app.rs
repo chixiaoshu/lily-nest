@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use crate::config::{load_about_items, load_projects, load_security_config, load_site_profile};
+use crate::{
+    config::{load_about_items, load_projects, load_security_config, load_site_profile},
+    model::SecurityConfig,
+};
 use axum::{
     Router,
     extract::{Request, State},
@@ -12,17 +15,20 @@ use axum::{
 use tokio::sync::RwLock;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::{ServeDir, ServeFile};
+use tracing::error;
 
 pub struct AppState {
     pub html_cache: RwLock<String>,
+    pub security_config: SecurityConfig,
 }
 
 pub fn build_app() -> Router {
     let api_routes = crate::routes::api::router();
+    let security_config = load_security_config();
     let state = Arc::new(AppState {
         html_cache: RwLock::new(render_index()),
+        security_config,
     });
-    let config = load_security_config();
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
@@ -31,20 +37,31 @@ pub fn build_app() -> Router {
             HeaderName::from_static("signature-agent"),
         ]);
 
-    let cors = if config.allow_origins.contains(&"*".to_string()) {
+    let cors = if state
+        .security_config
+        .allow_origins
+        .contains(&"*".to_string())
+    {
         cors.allow_origin(Any)
     } else {
-        let origins: Vec<HeaderValue> = config
+        let origins: Vec<HeaderValue> = state
+            .security_config
             .allow_origins
             .iter()
-            .filter_map(|o| o.parse().ok())
+            .filter_map(|o| match o.parse() {
+                Ok(v) => Some(v),
+                Err(_) => {
+                    error!("[security] 解析失败, 非法的配置: {}", o);
+                    None
+                }
+            })
             .collect();
         cors.allow_origin(origins)
     };
 
     Router::new()
         .route("/", get(handler_home_page))
-        .with_state(state)
+        .with_state(state.clone())
         .route("/index.html", get(|| async { Redirect::permanent("/") }))
         .nest("/api/v1", api_routes)
         .route_service("/robots.txt", ServeFile::new("./static/robots.txt"))
@@ -59,14 +76,25 @@ pub fn build_app() -> Router {
         .nest_service("/js", ServeDir::new("./static/js"))
         .nest_service("/fonts", ServeDir::new("./static/fonts"))
         .layer(cors)
-        .layer(middleware::from_fn(security_headers))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            security_headers,
+        ))
         .layer(middleware::from_fn(static_asset_cache_control))
 }
 
-async fn security_headers(req: Request, next: Next) -> Response {
+async fn security_headers(
+    State(state): State<Arc<AppState>>,
+    req: Request,
+    next: Next,
+) -> Response {
     let mut res = next.run(req).await;
 
-    let config = load_security_config();
+    let config = if cfg!(debug_assertions) {
+        load_security_config()
+    } else {
+        state.security_config.clone()
+    };
 
     // 用 (HeaderName, String) 而不是 (HeaderName, &'static str)
     let headers: [(HeaderName, String); 6] = [
