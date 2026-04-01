@@ -19,7 +19,7 @@
 
 ## 主要功能
 - 首页动态渲染（项目、团队成员、关于我）
-- 配置文件驱动（config.toml、projects.toml）
+- 配置文件驱动（config.toml、site.toml、projects.toml、about.toml）
 - RESTful API（/api/v1/health、/api/v1/home/profile）
 - 静态资源服务（图片、CSS、JS、robots.txt、sitemap.xml 等）
 - 深色主题跟随系统（纯 CSS，无 JS 闪烁）
@@ -80,8 +80,10 @@ lily-nest/
 > **注意：** release 模式下若未配置证书，程序会直接 panic 拒绝启动。
 
 ## 配置说明
-- `config.toml`：站点基础信息、TLS 证书路径、团队成员、关于我等
+- `config.toml`：TLS 证书路径、安全头
+- `site.toml`：站点基础信息
 - `projects.toml`：项目列表
+- `about.toml`：关于我
 - `static/`：静态资源（图片、CSS、JS、robots.txt 等）
 
 ## 安全特性
