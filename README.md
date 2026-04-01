@@ -8,6 +8,8 @@
 ## 项目简介
 梨窝是一个基于 Rust + Axum 的个人主页/作品集网站，支持项目动态加载、团队成员展示、深浅色主题等功能，界面采用 Material You 风格，支持响应式设计。
 
+当前版本已更新依赖，并强化了安全配置加载与错误日志记录。
+
 ## 技术栈
 - Rust 2024
 - [Axum](https://github.com/tokio-rs/axum) Web 框架
@@ -15,24 +17,27 @@
 - axum-server + rustls（TLS 支持）
 - Serde / TOML 配置
 - Tower HTTP 静态资源服务
+- tracing + tracing-subscriber 日志
 - 前端：原生 Material Design、@material/web 组件、本地 Material 3 主题 CSS
 
 ## 主要功能
 - 首页动态渲染（项目、团队成员、关于我）
 - 配置文件驱动（config.toml、site.toml、projects.toml、about.toml）
+- config.toml 中的 [security] 块支持动态 CORS、CSP、Permissions Policy 配置
 - RESTful API（/api/v1/health、/api/v1/home/profile）
 - 静态资源服务（图片、CSS、JS、robots.txt、sitemap.xml 等）
 - 深色主题跟随系统（纯 CSS，无 JS 闪烁）
 - HTML 页面缓存（release 模式，5 分钟）
 - HTTP 安全头（CSP、HSTS、X-Frame-Options、Permissions-Policy 等）
+- 安全配置加载增强：release 模式缓存 security 配置，debug 模式仍会热加载；非法 origin 会跳过并记录错误日志
 - release 模式强制 HTTPS，无证书直接拒绝启动
 
 ## 项目结构
 ```
 lily-nest/
 ├── Cargo.toml
-├── config.toml               # 站点基础配置（证书，安全）
-├── site.toml                 # 站点基础信息配置
+├── config.toml               # 站点基础配置（证书、安全、动态安全策略）
+├── site.toml                 # 站点基础信息配置（[site]）
 ├── projects.toml             # 项目列表配置
 ├── about.toml                # 关于我列表配置
 ├── certs/
@@ -80,8 +85,8 @@ lily-nest/
 > **注意：** release 模式下若未配置证书，程序会直接 panic 拒绝启动。
 
 ## 配置说明
-- `config.toml`：TLS 证书路径、安全头
-- `site.toml`：站点基础信息
+- `config.toml`：TLS 证书路径、[security] 安全策略（CORS、CSP、Permissions Policy）
+- `site.toml`：站点基础信息，使用 `[site]` 表配置
 - `projects.toml`：项目列表
 - `about.toml`：关于我
 - `static/`：静态资源（图片、CSS、JS、robots.txt 等）
@@ -90,6 +95,7 @@ lily-nest/
 - URL 协议校验：仅允许 `/` 和 `http://` 以及 `https://` 开头的链接，防止 `javascript:` XSS 注入
 - HTML 转义：所有配置内容插入页面前均转义
 - HTTP 安全响应头：CSP、HSTS、X-Content-Type-Options、X-Frame-Options、Referrer-Policy、Permissions-Policy
+- 安全配置解析错误会记录为错误日志；release 模式使用缓存的 security config，debug 模式支持热加载
 - release 模式强制 TLS，不支持 HTTP 回退
 
 ## 亮点与注意事项
